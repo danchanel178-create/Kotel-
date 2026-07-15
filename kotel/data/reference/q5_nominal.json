@@ -1,0 +1,17 @@
+{
+  "points": [
+    {"D_nom": 5, "q5_nom": 2.45},
+    {"D_nom": 10, "q5_nom": 1.85},
+    {"D_nom": 20, "q5_nom": 1.35},
+    {"D_nom": 35, "q5_nom": 1.05},
+    {"D_nom": 50, "q5_nom": 0.85},
+    {"D_nom": 75, "q5_nom": 0.70},
+    {"D_nom": 100, "q5_nom": 0.58},
+    {"D_nom": 130, "q5_nom": 0.50},
+    {"D_nom": 160, "q5_nom": 0.45},
+    {"D_nom": 200, "q5_nom": 0.38},
+    {"D_nom": 250, "q5_nom": 0.32}
+  ],
+  "constant_above_tph": 250,
+  "constant_value_percent": 0.2
+}

@@ -1,0 +1,7 @@
+{
+  "id": "steam_quality",
+  "name": "Свойства пара",
+  "version": "3.1.0",
+  "entry": "plugin.py",
+  "description": "IAPWS-IF97: состояние, котёл, насыщение, таблицы, подстановка в баланс"
+}
