@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Kotel — Boiler Thermal Calculation</title>
+    <style>
+      :root {
+        --bg: #0f172a;
+        --card: #1e293b;
+        --accent: #f97316;
+        --accent-2: #fb923c;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --ok: #22c55e;
+      }
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        background: radial-gradient(1200px 600px at 70% -10%, #1e3a8a33, transparent),
+          var(--bg);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      }
+      .app {
+        width: 100%;
+        max-width: 920px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+      }
+      header {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+      }
+      header .logo {
+        width: 46px; height: 46px; border-radius: 12px;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        display: grid; place-items: center; font-size: 26px;
+      }
+      header h1 { margin: 0; font-size: 22px; }
+      header p { margin: 2px 0 0; color: var(--muted); font-size: 13px; }
+      .card {
+        background: var(--card);
+        border: 1px solid #334155;
+        border-radius: 16px;
+        padding: 22px;
+      }
+      label { display: block; font-size: 13px; color: var(--muted); margin: 14px 0 6px; }
+      label:first-of-type { margin-top: 0; }
+      input {
+        width: 100%; padding: 10px 12px; border-radius: 10px;
+        border: 1px solid #475569; background: #0f172a; color: var(--text);
+        font-size: 14px;
+      }
+      input:focus { outline: 2px solid var(--accent); border-color: transparent; }
+      button {
+        margin-top: 20px; width: 100%; padding: 12px; border: none;
+        border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        color: #1a1200;
+      }
+      button:hover { filter: brightness(1.07); }
+      .results h2 { margin: 0 0 6px; font-size: 16px; }
+      .results .hint { color: var(--muted); font-size: 13px; margin: 0 0 16px; }
+      .metric {
+        display: flex; justify-content: space-between; align-items: baseline;
+        padding: 12px 0; border-bottom: 1px solid #334155;
+      }
+      .metric:last-child { border-bottom: none; }
+      .metric .name { color: var(--muted); font-size: 13px; }
+      .metric .value { font-size: 20px; font-weight: 700; }
+      .metric .unit { color: var(--muted); font-size: 12px; margin-left: 4px; }
+      .eff .value { color: var(--ok); }
+      .error { color: #f87171; font-size: 13px; margin-top: 12px; min-height: 16px; }
+      .placeholder { color: var(--muted); font-size: 14px; }
+      @media (max-width: 720px) { .app { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header>
+        <div class="logo">🔥</div>
+        <div>
+          <h1>Kotel — Boiler Thermal Calculation</h1>
+          <p>Тепловой расчёт котла прямым методом · direct heat-balance method</p>
+        </div>
+      </header>
+
+      <form class="card" id="calc-form">
+        <label for="fuel">Fuel consumption B (kg/h)</label>
+        <input id="fuel" type="number" step="any" value="720" required />
+
+        <label for="lhv">Lower heating value Qᵣⁱ (kJ/kg)</label>
+        <input id="lhv" type="number" step="any" value="29300" required />
+
+        <label for="steam">Steam flow D (kg/h)</label>
+        <input id="steam" type="number" step="any" value="6500" required />
+
+        <label for="hsteam">Steam enthalpy h″ (kJ/kg)</label>
+        <input id="hsteam" type="number" step="any" value="3200" required />
+
+        <label for="hfw">Feedwater enthalpy h_fw (kJ/kg)</label>
+        <input id="hfw" type="number" step="any" value="420" required />
+
+        <button type="submit">Calculate</button>
+        <div class="error" id="error"></div>
+      </form>
+
+      <section class="card results">
+        <h2>Results</h2>
+        <p class="hint">Gross boiler efficiency and heat balance.</p>
+        <div id="output">
+          <p class="placeholder">Enter parameters and press <b>Calculate</b>.</p>
+        </div>
+      </section>
+    </div>
+
+    <script>
+      const form = document.getElementById("calc-form");
+      const errorEl = document.getElementById("error");
+      const output = document.getElementById("output");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        errorEl.textContent = "";
+        const payload = {
+          fuel_consumption_kg_per_h: parseFloat(document.getElementById("fuel").value),
+          lower_heating_value_kj_per_kg: parseFloat(document.getElementById("lhv").value),
+          steam_flow_kg_per_h: parseFloat(document.getElementById("steam").value),
+          steam_enthalpy_kj_per_kg: parseFloat(document.getElementById("hsteam").value),
+          feedwater_enthalpy_kj_per_kg: parseFloat(document.getElementById("hfw").value),
+        };
+        try {
+          const res = await fetch("/api/calculate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.detail || "Calculation failed");
+          }
+          render(data);
+        } catch (err) {
+          output.innerHTML = '<p class="placeholder">No results.</p>';
+          errorEl.textContent = err.message;
+        }
+      });
+
+      function render(d) {
+        output.innerHTML = `
+          <div class="metric eff">
+            <span class="name">Gross efficiency η</span>
+            <span><span class="value">${d.efficiency_percent}</span><span class="unit">%</span></span>
+          </div>
+          <div class="metric">
+            <span class="name">Useful heat Q_useful</span>
+            <span><span class="value">${d.useful_heat_kw}</span><span class="unit">kW</span></span>
+          </div>
+          <div class="metric">
+            <span class="name">Heat input Q_input</span>
+            <span><span class="value">${d.heat_input_kw}</span><span class="unit">kW</span></span>
+          </div>
+          <div class="metric">
+            <span class="name">Steam / fuel ratio</span>
+            <span><span class="value">${d.steam_to_fuel_ratio}</span><span class="unit">kg/kg</span></span>
+          </div>`;
+      }
+    </script>
+  </body>
+</html>
